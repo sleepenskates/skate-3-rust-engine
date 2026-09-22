@@ -124,7 +124,7 @@ All vectors are 1-based Lua arrays `{x,y,z}` in engine world coordinates, metres
 | `sdk.input.action(id:integer)` | number from published native gameplay action 64–81; errors outside range |
 | `sdk.ui.text(key:string,text:string)` | nil; create/update owned plain screen text, max 1024 bytes; stable top-left rows sorted by owner/key, 19px font, 28px row spacing |
 | `sdk.ui.font.list()` | table of `{path,name,size}` (path = package-relative forward-slash path, name = file stem, size = bytes); list `.ttf`/`.otf` files recursively below the package `fonts/` folder, sorted by path; empty/missing folder returns an empty array |
-| `sdk.ui.font.apply(path:string,scale:number)` | nil; replace the game-wide default font asset with `path` (package-relative, at most 16 MiB, must parse as a TTF/OTF face) and scale every default-font HUD/menu text size by `scale` in `[0.25,4]`; only one mod owns the base font at a time; `path==""` restores the engine default font and clears the scale; a second owner is rejected |
+| `sdk.ui.font.apply(path:string,scale:number)` | nil; replace the game-wide default font asset with `path` (package-relative, at most 16 MiB, must parse as a TTF/OTF face) and scale every default-font HUD/menu text size by `scale` in `[0.2,6]`; only one mod owns the base font at a time; `path==""` restores the engine default font and clears the scale; a second owner is rejected |
 | `sdk.ui.font.clear()` | nil; shorthand for `sdk.ui.font.apply("",1)`; restores the engine default font |
 | `sdk.scene.cube(key:string,position:Vec3,size:Vec3,color:Vec3)` | nil; create/update owned visual cuboid; no collision, grind attachment or rigid body |
 | `sdk.scene.remove(key:string)` | nil; remove owned cube/text; absent key is a no-op; cannot address another mod's objects |
@@ -262,7 +262,7 @@ must validate as a font face (at most 16 MiB each). Only one mod owns the base f
 time; a conflicting owner is rejected. Clearing (empty path or `sdk.ui.font.clear()`)
 restores the recorded default font. Disable/reload/fault of the owner also restores it.
 
-`scale` multiplies the font size of every default-font text node (`0.25..4`, `1`
+`scale` multiplies the font size of every default-font text node (`0.2..6`, `1`
 meaning unchanged) to compensate for a face that renders larger or smaller than stock.
 The multiplier maps to per-node scaled sizes in a `Update` system queued after the
 mod command batch, so a font apply refreshes text the same frame it lands; clearing

@@ -91,7 +91,7 @@ sdk.ui.font = {}
 function sdk.ui.font.list() end
 --- Replace the game-wide base font and scale every default-font text size.
 ---@param path string Package-relative .ttf/.otf under fonts/; at most 16 MiB. "" restores the engine default.
----@param scale number 0.25..4, multiplies default-font HUD/menu text sizes; 1 = unchanged.
+---@param scale number 0.2..6, multiplies default-font HUD/menu text sizes; 1 = unchanged.
 function sdk.ui.font.apply(path, scale) end
 --- Shorthand for sdk.ui.font.apply("", 1): restore the engine default font.
 function sdk.ui.font.clear() end

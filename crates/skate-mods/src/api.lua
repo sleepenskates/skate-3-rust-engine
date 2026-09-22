@@ -15,11 +15,11 @@ function sdk.ui.font.list()
     return out
 end
 -- Replace the game-wide base font with a .ttf/.otf packaged under fonts/.
--- Empty path restores the engine default font. scale 0.25..4, 1 = unchanged.
+-- Empty path restores the engine default font. scale 0.2..6, 1 = unchanged.
 function sdk.ui.font.apply(path, scale)
     assert(type(path) == 'string' and #path <= 256 and #path > 0, 'invalid font path')
     scale = scale or 1
-    assert(type(scale) == 'number' and scale >= 0.25 and scale <= 4, 'invalid font scale')
+    assert(type(scale) == 'number' and scale >= 0.2 and scale <= 6, 'invalid font scale')
     submit{kind='ui_font', path=path, scale=scale}
 end
 function sdk.ui.font.clear()

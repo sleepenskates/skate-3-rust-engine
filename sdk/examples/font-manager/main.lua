@@ -15,26 +15,31 @@ local function font_exists(path)
 end
 local function draw()
     local status = sdk.snapshot.font or {}
-    local active = status.active and (status.path .. ' x' .. status.scale) or '(engine default)'
+    local scale = sdk.settings.scale or 1
+    local active = status.active
+        and string.format('%s x%.2f', status.path, status.scale)
+        or '(engine default)'
     local rows = {
         'BASE FONT MANAGER',
         'Active: ' .. active,
+        string.format('HUD text: 19px x %.2f = %.0fpx', scale, 19 * scale),
         '',
-        'Packaged fonts:',
+        'Packaged fonts (.ttf/.otf):',
     }
     local fonts = sdk.ui.font.list()
     if #fonts == 0 then
         rows[#rows + 1] = '  (drop .ttf/.otf into this mod\'s fonts/ folder)'
     else
         for i, f in ipairs(fonts) do
+            if i > 8 then break end
             rows[#rows + 1] = string.format('  %s - %s', f.path, format_size(f.size))
-            if i >= 10 then break end
         end
     end
     rows[#rows + 1] = ''
-    rows[#rows + 1] = 'Settings in the Mods menu: Font file, Text size scale.'
-    rows[#rows + 1] = 'Empty Font file restores the engine default font.'
-    for i = 1, 16 do
+    rows[#rows + 1] = 'Resize: Text size scale slider in the Mods menu.'
+    rows[#rows + 1] = 'Preview:'
+    rows[#rows + 1] = 'The quick brown fox jumps over the lazy dog 0123456789'
+    for i = 1, 18 do
         sdk.ui.text('font_line' .. i, rows[i] or '')
     end
 end

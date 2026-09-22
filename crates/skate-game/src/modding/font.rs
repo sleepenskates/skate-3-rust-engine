@@ -1,6 +1,6 @@
 //! Base-font manager. Replaces the font asset behind the default font handle so
 //! every text node using `TextFont::default()` renders with the mod-supplied
-//! font, and rescales each visible size by a global multiplier (0.25..=4).
+//! font, and rescales each visible size by a global multiplier (0.2..=6).
 use super::Mods;
 use bevy::prelude::*;
 use skate_mods::read_bounded;
