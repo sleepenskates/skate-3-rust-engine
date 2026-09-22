@@ -445,6 +445,52 @@ fn fingerprint(root: &Path) -> Result<u64, String> {
     visit(&root, &root, &mut h, &mut 0, &mut 0)?;
     Ok(h.finish())
 }
+/// A font available inside a package's `fonts/` folder.
+#[derive(Clone, Debug, Serialize)]
+pub struct FontEntry {
+    /// Package-relative path with forward slashes (e.g. `fonts/mono.ttf`).
+    pub path: String,
+    /// File name without the extension.
+    pub name: String,
+    /// File size in bytes.
+    pub size: u64,
+}
+/// Recursively list `.ttf`/`.otf` files under `<root>/<dir>`, sorted by path.
+/// Missing or unreadable folders simply yield an empty list.
+pub fn list_fonts(root: &Path, dir: &str) -> Vec<FontEntry> {
+    let base = root.canonicalize().unwrap_or_else(|_| root.to_path_buf());
+    let mut out = Vec::new();
+    let mut pending = vec![std::path::PathBuf::from(dir)];
+    while let Some(relative) = pending.pop() {
+        let Ok(entries) = std::fs::read_dir(base.join(&relative)) else {
+            continue;
+        };
+        let mut children: Vec<_> = entries.filter_map(Result::ok).map(|e| e.path()).collect();
+        children.sort();
+        for child in children {
+            if child.is_dir() {
+                if let Ok(relative) = child.strip_prefix(&base) {
+                    pending.push(relative.to_path_buf());
+                }
+            } else if child
+                .extension()
+                .is_some_and(|e| e.eq_ignore_ascii_case("ttf") || e.eq_ignore_ascii_case("otf"))
+            {
+                if let Ok(relative) = child.strip_prefix(&base) {
+                    let path = relative.to_string_lossy().replace('\\', "/");
+                    let name = child
+                        .file_stem()
+                        .map(|s| s.to_string_lossy().into_owned())
+                        .unwrap_or_else(|| path.clone());
+                    let size = child.metadata().map(|m| m.len()).unwrap_or(0);
+                    out.push(FontEntry { path, name, size });
+                }
+            }
+        }
+    }
+    out.sort_by(|a, b| a.path.cmp(&b.path));
+    out
+}
 pub fn read_bounded(root: &Path, relative: &str, limit: u64) -> Result<Vec<u8>, String> {
     let path = Path::new(relative);
     if path

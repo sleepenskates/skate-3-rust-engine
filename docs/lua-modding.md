@@ -123,6 +123,9 @@ All vectors are 1-based Lua arrays `{x,y,z}` in engine world coordinates, metres
 | `sdk.input.down(key:string)` | boolean; whether Bevy physical key name is held at snapshot time; unrecognized/unpressed names return false |
 | `sdk.input.action(id:integer)` | number from published native gameplay action 64–81; errors outside range |
 | `sdk.ui.text(key:string,text:string)` | nil; create/update owned plain screen text, max 1024 bytes; stable top-left rows sorted by owner/key, 19px font, 28px row spacing |
+| `sdk.ui.font.list()` | table of `{path,name,size}` (path = package-relative forward-slash path, name = file stem, size = bytes); list `.ttf`/`.otf` files recursively below the package `fonts/` folder, sorted by path; empty/missing folder returns an empty array |
+| `sdk.ui.font.apply(path:string,scale:number)` | nil; replace the game-wide default font asset with `path` (package-relative, at most 16 MiB, must parse as a TTF/OTF face) and scale every default-font HUD/menu text size by `scale` in `[0.25,4]`; only one mod owns the base font at a time; `path==""` restores the engine default font and clears the scale; a second owner is rejected |
+| `sdk.ui.font.clear()` | nil; shorthand for `sdk.ui.font.apply("",1)`; restores the engine default font |
 | `sdk.scene.cube(key:string,position:Vec3,size:Vec3,color:Vec3)` | nil; create/update owned visual cuboid; no collision, grind attachment or rigid body |
 | `sdk.scene.remove(key:string)` | nil; remove owned cube/text; absent key is a no-op; cannot address another mod's objects |
 | `sdk.time.elapsed` | active Update seconds since state creation, advanced after `on_update` |
@@ -154,7 +157,9 @@ Cube positions and teleport positions must be finite, each component within ±10
   keys = { [physical_key_name]=true },
   actions = {number,...},    -- 18 values, array slot 1 is native action 64
   paused = boolean, replay = boolean,
-  animation = {bone_names={...},slots={...}}
+  animation = {bone_names={...},slots={...}},
+  font = {active=boolean, owner=string, path=string, scale=number}
+  -- font.active=false while no mod owns the base font
 }
 ```
 
@@ -202,7 +207,10 @@ and path rules are in mod-packages.md. Lua allocator quotas exclude host asset s
 which is bounded separately. `sdk.read_text` reads UTF-8 package data; there is no general
 JSON decoder in Lua. Vehicle definitions and native animation JSON use dedicated host
 parsers. Vehicles support embedded GLB models and synthesized engine audio. Arbitrary
-scene/texture/font/audio-bank loading is not exposed. Text uses the existing engine font.
+scene/texture/audio-bank loading is not exposed. Text renders through the engine's
+default font asset, which a mod may replace wholesale with a packaged `.ttf`/`.otf`
+base font and a global size scale via `sdk.ui.font`. This affects every text node
+that does not set an explicit font handle (menus, HUD, overlays).
 
 
 No camera-controller override, native audio command, customiser-profile mutation, physics force injection, collision-geometry insertion, climbing controller installation, map-selection command, score manipulation, arbitrary network messaging, cross-mod messages or persistent Lua save store is exposed in API 1. Existing character customisation, native audio integration and private climbing loaders retain their own lifetimes. Broad engine-internal access is deliberately absent. Useful current extension types include HUDs, timers, route/training challenges, native-reset navigation tools, visual world annotations, grind/bail instrumentation and constrained original body animation replacement.
@@ -243,6 +251,29 @@ example ZIPs are committed in top-level mods/, including the prepared kart model
 
 All owner-created visuals are removed on disable, reload or fault. Native skating and
 vehicle physics remain host-controlled; Lua does not receive memory pointers or World.
+
+## Base font manager
+
+`sdk.ui.font.*` installs one owner's reversible game-wide base font.
+The engine's default font handle renders FiraMono-subset; replacing the asset behind
+that handle changes every HUD, menu and overlay text node that does not set an explicit
+font handle. Fonts are packaged `.ttf`/`.otf` files under the mod's `fonts/` folder and
+must validate as a font face (at most 16 MiB each). Only one mod owns the base font at a
+time; a conflicting owner is rejected. Clearing (empty path or `sdk.ui.font.clear()`)
+restores the recorded default font. Disable/reload/fault of the owner also restores it.
+
+`scale` multiplies the font size of every default-font text node (`0.25..4`, `1`
+meaning unchanged) to compensate for a face that renders larger or smaller than stock.
+The multiplier maps to per-node scaled sizes in a `Update` system queued after the
+mod command batch, so a font apply refreshes text the same frame it lands; clearing
+restores original sizes and removes its internal marker component. `scale` changes on an
+owned font are re-applied by the same mod. To persist a selection, mirror it into your
+manifest settings (`font_file` string, `scale` number) and re-apply from `on_settings`,
+as `sdk/examples/font-manager` does.
+
+`sdk/examples/font-manager` demonstrates scanning `fonts/`, applying and clearing the
+base font, and a persisted `scale`. It ships the same FiraMono-subset face as the
+engine so the default settings are visually neutral.
 
 ## Multiplayer
 

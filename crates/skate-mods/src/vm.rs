@@ -28,6 +28,10 @@ pub enum Command {
     Animation {
         path: String,
     },
+    UiFont {
+        path: String,
+        scale: f32,
+    },
     Overlay {
         key: String,
         text: String,
@@ -59,6 +63,12 @@ impl Command {
             Self::VehicleRemove{key}|Self::VehicleEnter{key}|Self::VehicleExit{key} => crate::schema::valid_id(key),
             Self::Trainer { tuning } => tuning.valid(),
             Self::Animation { path } => !path.is_empty() && path.len() <= 256,
+            Self::UiFont { path, scale } => {
+                path.len() <= 256
+                    && !path.bytes().any(|b| b.is_ascii_control())
+                    && scale.is_finite()
+                    && (0.25..=4.).contains(&scale)
+            }
             Self::Log { text } => text.len() <= 2048,
             Self::Overlay { key, text } => crate::schema::valid_id(key) && text.len() <= 1024,
             Self::Cube {
@@ -160,6 +170,14 @@ impl Vm {
                     let b = read_bounded(&asset_root, &path, 256 * 1024)
                         .map_err(mlua::Error::RuntimeError)?;
                     String::from_utf8(b).map_err(mlua::Error::external)
+                })?,
+            )?;
+            let font_root = root.to_path_buf();
+            sdk.set(
+                "_list_fonts",
+                lua.create_function(move |lua, ()| {
+                    let fonts = crate::list_fonts(&font_root, "fonts");
+                    lua.to_value(&fonts).map_err(mlua::Error::external)
                 })?,
             )?;
             sdk.set("settings", lua.to_value(settings)?)?;

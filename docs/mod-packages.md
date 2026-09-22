@@ -34,6 +34,8 @@ my-mod.zip
     help.txt               optional package text data
   animations/
     rider.json             optional native vehicle clips
+  fonts/
+    MyFont.ttf, .otf       optional base font candidates for sdk.ui.font
 ```
 
 Do not wrap this in a my-mod/ parent folder. `entry` may name a different relative
@@ -119,6 +121,8 @@ ZIP metadata is deterministic; an unchanged source folder produces identical pac
 - Vehicle definition ≤128 KiB; model ≤32 MiB; vehicle clips ≤16 MiB.
 - Text reads ≤256 KiB; authored vanilla body replacements ≤4 MiB. Other Lua quotas
   and native validation rules are described in lua-modding.md and vehicle-sdk.md.
+- Base font reads ≤16 MiB; they must parse as a `.ttf`/`.otf` font face. `sdk.ui.font.list()`
+  only reports files under the package `fonts/` folder.
 
 The loader checks/decompresses within bounds, then writes to a new session directory
 under mods/.cache. Assets use this private directory transparently. Never edit or package

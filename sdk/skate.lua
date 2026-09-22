@@ -23,6 +23,11 @@
 ---@class AnimationInfo
 ---@field bone_names string[]
 ---@field slots table<string, {fps:number,frame_count:integer}>
+---@class FontSnapshot
+---@field active boolean False while no mod owns the base font.
+---@field owner? string Mod ID of the current base-font owner.
+---@field path? string Package-relative font path.
+---@field scale? number Active global text-size multiplier.
 ---@class SDKSnapshot
 ---@field player PlayerSnapshot
 ---@field map MapSnapshot
@@ -33,6 +38,7 @@
 ---@field actions number[] 18 values; Lua index 1 corresponds to native action 64.
 ---@field paused boolean
 ---@field replay boolean
+---@field font FontSnapshot
 ---@class ModCallbacks
 ---@field on_load? fun()
 ---@field on_unload? fun() Commands discarded; host always cleans up.
@@ -76,6 +82,19 @@ function sdk.input.action(id) end
 ---@param key string Owner-local stable visual key, 1..64 lowercase ASCII letters/digits/._-
 ---@param text string At most 1024 UTF-8 bytes.
 function sdk.ui.text(key, text) end
+---@class FontEntry
+---@field path string Package-relative forward-slash path under fonts/.
+---@field name string File stem without the extension.
+---@field size integer File size in bytes.
+sdk.ui.font = {}
+---@return FontEntry[] .ttf/.otf files below fonts/, sorted by path. Empty when missing.
+function sdk.ui.font.list() end
+--- Replace the game-wide base font and scale every default-font text size.
+---@param path string Package-relative .ttf/.otf under fonts/; at most 16 MiB. "" restores the engine default.
+---@param scale number 0.25..4, multiplies default-font HUD/menu text sizes; 1 = unchanged.
+function sdk.ui.font.apply(path, scale) end
+--- Shorthand for sdk.ui.font.apply("", 1): restore the engine default font.
+function sdk.ui.font.clear() end
 ---@param key string Same namespace as sdk.ui.text; repeated key updates/replaces.
 ---@param position Vec3
 ---@param size Vec3 Each component >0 and <=100 metres.

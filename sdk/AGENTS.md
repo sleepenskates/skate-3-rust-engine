@@ -61,6 +61,9 @@ python tools/package_mod.py sdk/examples/your-mod mods/your-mod.zip
   package text reads and supported authored animation replacement slots.
 - Native Trainer tuning: pop, push, braking, steering, grip, fakie hold and related
   multipliers. Only one mod can own trainer tuning at a time.
+- Base font manager: scan packaged `.ttf`/`.otf` under `fonts/`, install one owner's
+  game-wide base font plus a global text-size scale, restore the engine default on
+  retire/failure/clear. See `sdk/examples/font-manager`.
 - Vehicles: spawn/read/control/tune/enter/exit/reset/remove, Rapier map and vehicle
   collision, raycast wheels/suspension, collider offsets/rounding, independent inertia
   and centre of mass, throttle-responsive engine synthesis and live engine volume.

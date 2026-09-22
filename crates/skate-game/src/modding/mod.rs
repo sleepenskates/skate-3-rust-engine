@@ -1,5 +1,6 @@
 //! Main-thread SDK adapter. Lua never receives World, entity IDs, or asset handles.
 mod menu;
+pub(crate) mod font;
 pub(crate) mod network;
 mod panel;
 pub(crate) mod vehicles;
@@ -15,6 +16,8 @@ pub(crate) struct Mods {
     pub manager: Manager,
     animation_info: serde_json::Value,
     trainer: Option<(String, skate_mods::TrainerTuning)>,
+    default_font: Option<Font>,
+    font: Option<(String, font::FontState)>,
     owned: BTreeMap<(String, String), Owned>,
     generation: u64,
     last_bail: bool,
@@ -70,9 +73,12 @@ impl Plugin for ModdingPlugin {
         })
         .collect();
         let animation_info = json!({"bone_names":frames.bone_names,"slots":slots});
+        let default_font = font::header(app);
         app.insert_resource(Mods {
             animation_info,
             trainer: None,
+            default_font,
+            font: None,
             manager: Manager::new(root, settings),
             owned: BTreeMap::new(),
             generation: u64::MAX,
@@ -91,7 +97,13 @@ impl Plugin for ModdingPlugin {
                 .after(crate::app::SimulationSet::Physics)
                 .run_if(crate::graphics_menu::gameplay_active),
         )
-        .add_systems(Update, update.after(crate::app::FrameSet::Animation));
+        .add_systems(
+            Update,
+            (
+                update.after(crate::app::FrameSet::Animation),
+                font::mirror.after(update),
+            ),
+        );
         vehicles::install(app);
         network::install(app);
         menu::install(app);
@@ -116,11 +128,15 @@ fn snapshot(world: &World) -> serde_json::Value {
         .values();
     let vehicle_pose=world.resource::<vehicles::Vehicles>().player_pose();
     let player_position=vehicle_pose.map(|p|p.0).unwrap_or_else(||s.animated_skeleton.roots.animation_to_world[3][..3].try_into().unwrap());
+    let font = world.resource::<Mods>().font.as_ref().map(|(owner, f)| json!({
+        "active":true,"owner":owner,"path":f.path,"scale":f.scale
+    })).unwrap_or_else(|| json!({"active":false}));
     json!({"player":{"position":player_position,"velocity": &p.skateboard.vector_80.map(f32::from_bits)[..3],"heading":vehicle_pose.map(|p|p.1).unwrap_or_else(||s.animated_skeleton.roots.animation_to_world[2][0].atan2(s.animated_skeleton.roots.animation_to_world[2][2])),"on_board":p.state.category_12!=500,"state":p.state.state_16,"category":p.state.category_12,"bailing":physics.board_wiping_out,"grind":{"active":grinding,"name":grind_name,"kind":grind_kind,"distance":grind_distance}},
         "network":network::snapshot(world),"vehicles":vehicles::snapshot(world),"vehicle_input":vehicles::input(world),
         "animation":world.resource::<Mods>().animation_info,
         "map":{"name":map.name,"generation":map.generation},"tick":physics.ticks,"keys":keys,"actions":actions,
-        "paused":world.resource::<crate::graphics_menu::Menu>().open,"replay":world.resource::<crate::replay::Replay>().active})
+        "paused":world.resource::<crate::graphics_menu::Menu>().open,"replay":world.resource::<crate::replay::Replay>().active,
+        "font":font})
 }
 fn maintenance(world: &mut World) {
     let snap = snapshot(world);
@@ -230,6 +246,9 @@ fn apply(world: &mut World, mods: &mut Mods) {
     {
         mods.trainer = None;
     }
+    if mods.font.as_ref().is_some_and(|(owner, _)| retired.contains(owner)) {
+        font::clear(world, mods);
+    }
     world.resource_mut::<crate::physics::GamePhysics>().trainer =
         mods.trainer.as_ref().map(|(_, t)| *t).unwrap_or_default();
     for id in &retired {
@@ -307,6 +326,7 @@ fn apply(world: &mut World, mods: &mut Mods) {
                 mods.trainer = None;
                 world.resource_mut::<crate::physics::GamePhysics>().trainer = Default::default();
             }
+            font::forget(world, mods, &id);
             world
                 .resource::<crate::physics::SkaterRuntime>()
                 .animation
@@ -387,6 +407,13 @@ fn apply_one(world: &mut World, mods: &mut Mods, id: &str, command: Command) -> 
                 .animation
                 .evaluator
                 .install_mod_clips(id, text)?;
+        }
+        Command::UiFont { path, scale } => {
+            if path.is_empty() {
+                font::clear(world, mods);
+            } else {
+                font::apply(world, mods, id, &path, scale)?;
+            }
         }
         Command::Log { text } => info!("Lua [{id}]: {text}"),
         Command::Remove { .. } => retire(world, mods, &key.unwrap()),

@@ -3,6 +3,28 @@ sdk._submit = nil
 function sdk.log(text) submit{kind="log",text=text} end
 sdk.ui = {}
 function sdk.ui.text(key,text) submit{kind="overlay",key=key,text=text} end
+local list_fonts = sdk._list_fonts
+sdk._list_fonts = nil
+sdk.ui.font = {}
+function sdk.ui.font.list()
+    local fonts = list_fonts()
+    local out = {}
+    for i, f in ipairs(fonts) do
+        out[i] = { path = f.path, name = f.name, size = f.size }
+    end
+    return out
+end
+-- Replace the game-wide base font with a .ttf/.otf packaged under fonts/.
+-- Empty path restores the engine default font. scale 0.25..4, 1 = unchanged.
+function sdk.ui.font.apply(path, scale)
+    assert(type(path) == 'string' and #path <= 256 and #path > 0, 'invalid font path')
+    scale = scale or 1
+    assert(type(scale) == 'number' and scale >= 0.25 and scale <= 4, 'invalid font scale')
+    submit{kind='ui_font', path=path, scale=scale}
+end
+function sdk.ui.font.clear()
+    submit{kind='ui_font', path='', scale=1}
+end
 sdk.scene = {}
 function sdk.scene.cube(key,position,size,color)
     submit{kind="cube",key=key,position=position,size=size,color=color}

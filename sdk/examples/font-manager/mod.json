@@ -1,0 +1,26 @@
+{
+  "id": "example.font-manager",
+  "api": 1,
+  "name": "Base Font Manager",
+  "version": "0.1.0",
+  "author": "Skate Rust Engine",
+  "description": "Picks a packaged .ttf/.otf as the game-wide base font for the HUD and menus, with a text size scale that compensates for the chosen face. Set Font file under this mod in the Mods menu; leave it empty to restore the engine default.",
+  "entry": "main.lua",
+  "settings": {
+    "font_file": {
+      "type": "string",
+      "label": "Font file",
+      "default": "",
+      "description": "Package-relative path of a .ttf/.otf under this mod's fonts/ folder (see the in-game overlay for available paths and use forward slashes). Empty restores the engine default font."
+    },
+    "scale": {
+      "type": "number",
+      "label": "Text size scale",
+      "default": 1,
+      "min": 0.25,
+      "max": 4,
+      "step": 0.02,
+      "description": "Multiplies every default-font HUD and menu text size so a large or small base font reads comfortably. 1.00 keeps the original sizes."
+    }
+  }
+}
