@@ -113,12 +113,12 @@ pub(crate) fn mirror(world: &mut World) {
         }
     }
     for (entity, original) in first_scale {
-        if let Some(mut entity) = world.get_entity_mut(entity) {
+        if let Ok(mut entity) = world.get_entity_mut(entity) {
             let _ = entity.insert(ModFontScaled { original });
         }
     }
     for entity in restore {
-        if let Some(mut entity) = world.get_entity_mut(entity) {
+        if let Ok(mut entity) = world.get_entity_mut(entity) {
             let _ = entity.remove::<ModFontScaled>();
         }
     }

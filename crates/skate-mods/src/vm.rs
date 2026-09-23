@@ -67,7 +67,7 @@ impl Command {
                 path.len() <= 256
                     && !path.bytes().any(|b| b.is_ascii_control())
                     && scale.is_finite()
-                    && (0.2..=6.).contains(&scale)
+                    && (0.2..=6.).contains(scale)
             }
             Self::Log { text } => text.len() <= 2048,
             Self::Overlay { key, text } => crate::schema::valid_id(key) && text.len() <= 1024,
